@@ -1,0 +1,114 @@
+<!-- src/app/components/task-list/task-list.component.html -->
+
+<app-navbar></app-navbar>
+
+<div class="task-list-container">
+  <div class="header">
+    <h1>Mes Tâches</h1>
+    <button class="btn-add" (click)="toggleForm()" *ngIf="!showForm">
+      ➕ Nouvelle tâche
+    </button>
+  </div>
+
+  <!-- Formulaire -->
+  <app-task-form
+    *ngIf="showForm"
+    [task]="editingTask"
+    (submitTask)="onSubmitTask($event)"
+    (cancel)="cancelForm()"
+  ></app-task-form>
+
+  <!-- Filtres -->
+  <div class="filters">
+    <button
+      class="filter-btn"
+      [class.active]="filterType === 'all'"
+      (click)="filterType = 'all'"
+    >
+      Toutes ({{ (allTasks$ | async)?.length || 0 }})
+    </button>
+    <button
+      class="filter-btn"
+      [class.active]="filterType === 'pending'"
+      (click)="filterType = 'pending'"
+    >
+      En cours ({{ (pendingTasks$ | async)?.length || 0 }})
+    </button>
+    <button
+      class="filter-btn"
+      [class.active]="filterType === 'completed'"
+      (click)="filterType = 'completed'"
+    >
+      Terminées ({{ (completedTasks$ | async)?.length || 0 }})
+    </button>
+  </div>
+
+  <!-- Liste des tâches -->
+  <div class="tasks-grid">
+    <div
+      *ngFor="let task of getFilteredTasks() | async"
+      class="task-card"
+      [class.completed]="task.completed"
+      [class.overdue]="isOverdue(task)"
+    >
+      <!-- En-tête de la carte -->
+      <div class="task-header">
+        <div class="task-checkbox">
+          <input
+            type="checkbox"
+            [checked]="task.completed"
+            (change)="toggleComplete(task.id)"
+            [id]="'task-' + task.id"
+          />
+          <label [for]="'task-' + task.id"></label>
+        </div>
+        <span class="task-priority" [class]="getPriorityClass(task.priority)">
+          {{ getPriorityLabel(task.priority) }}
+        </span>
+      </div>
+
+      <!-- Contenu de la tâche -->
+      <div class="task-content">
+        <h3 [class.completed-text]="task.completed">{{ task.title }}</h3>
+        <p class="task-description">{{ task.description }}</p>
+
+        <div class="task-meta">
+          <span class="task-date">
+            📅 {{ task.dueDate | date: 'dd/MM/yyyy' }}
+          </span>
+          <span class="task-created">
+            Créée le {{ task.createdAt | date: 'dd/MM/yyyy' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="task-actions">
+        <button
+          class="btn-edit"
+          (click)="editTask(task)"
+          [disabled]="task.completed"
+        >
+          ✏️ Modifier
+        </button>
+        <button class="btn-delete" (click)="deleteTask(task.id)">
+          🗑️ Supprimer
+        </button>
+      </div>
+
+      <!-- Badge en retard -->
+      <div class="overdue-badge" *ngIf="isOverdue(task)">
+        ⚠️ En retard
+      </div>
+    </div>
+  </div>
+
+  <!-- Message si aucune tâche -->
+  <div class="empty-state" *ngIf="(getFilteredTasks() | async)?.length === 0">
+    <div class="empty-icon">📋</div>
+    <h3>Aucune tâche</h3>
+    <p *ngIf="filterType === 'all'">Commencez par créer votre première tâche !</p>
+    <p *ngIf="filterType === 'pending'">Toutes vos tâches sont terminées ! 🎉</p>
+    <p *ngIf="filterType === 'completed'">Aucune tâche terminée pour le moment.</p>
+  </div>
+</div>
