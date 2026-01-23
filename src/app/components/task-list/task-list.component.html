@@ -2,7 +2,7 @@
 
 <app-navbar></app-navbar>
 
-<div class="task-list-container">
+<div class="container">
   <div class="header">
     <h1>Mes Tâches</h1>
     <button class="btn-add" (click)="toggleForm()" *ngIf="!showForm">
@@ -11,104 +11,102 @@
   </div>
 
   <!-- Formulaire -->
-  <app-task-form
-    *ngIf="showForm"
-    [task]="editingTask"
-    (submitTask)="onSubmitTask($event)"
-    (cancel)="cancelForm()"
-  ></app-task-form>
+  <div class="form-card" *ngIf="showForm">
+    <h3>{{ editingTask ? 'Modifier' : 'Nouvelle' }} tâche</h3>
+    <form [formGroup]="taskForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label>Titre *</label>
+        <input type="text" formControlName="title" placeholder="Ex: Terminer le rapport">
+        <small class="error" *ngIf="taskForm.get('title')?.invalid && taskForm.get('title')?.touched">
+          Minimum 3 caractères
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label>Description *</label>
+        <textarea formControlName="description" rows="3" placeholder="Décrivez votre tâche..."></textarea>
+        <small class="error" *ngIf="taskForm.get('description')?.invalid && taskForm.get('description')?.touched">
+          Minimum 10 caractères
+        </small>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Priorité *</label>
+          <select formControlName="priority">
+            <option [value]="1">1 - Très basse</option>
+            <option [value]="2">2 - Basse</option>
+            <option [value]="3">3 - Moyenne</option>
+            <option [value]="4">4 - Haute</option>
+            <option [value]="5">5 - Très haute</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Date d'échéance *</label>
+          <input type="date" formControlName="dueDate">
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-cancel" (click)="toggleForm()">Annuler</button>
+        <button type="submit" class="btn-submit" [disabled]="taskForm.invalid">
+          {{ editingTask ? 'Modifier' : 'Ajouter' }}
+        </button>
+      </div>
+    </form>
+  </div>
 
   <!-- Filtres -->
   <div class="filters">
-    <button
-      class="filter-btn"
-      [class.active]="filterType === 'all'"
-      (click)="filterType = 'all'"
-    >
-      Toutes ({{ (allTasks$ | async)?.length || 0 }})
+    <button [class.active]="filter === 'all'" (click)="filter = 'all'">
+      Toutes ({{ (tasks$ | async)?.length || 0 }})
     </button>
-    <button
-      class="filter-btn"
-      [class.active]="filterType === 'pending'"
-      (click)="filterType = 'pending'"
-    >
+    <button [class.active]="filter === 'pending'" (click)="filter = 'pending'">
       En cours ({{ (pendingTasks$ | async)?.length || 0 }})
     </button>
-    <button
-      class="filter-btn"
-      [class.active]="filterType === 'completed'"
-      (click)="filterType = 'completed'"
-    >
+    <button [class.active]="filter === 'completed'" (click)="filter = 'completed'">
       Terminées ({{ (completedTasks$ | async)?.length || 0 }})
     </button>
   </div>
 
   <!-- Liste des tâches -->
   <div class="tasks-grid">
-    <div
-      *ngFor="let task of getFilteredTasks() | async"
-      class="task-card"
-      [class.completed]="task.completed"
-      [class.overdue]="isOverdue(task)"
-    >
-      <!-- En-tête de la carte -->
+    <div class="task-card"
+         *ngFor="let task of getFilteredTasks() | async"
+         [class.completed]="task.completed">
+
       <div class="task-header">
-        <div class="task-checkbox">
-          <input
-            type="checkbox"
-            [checked]="task.completed"
-            (change)="toggleComplete(task.id)"
-            [id]="'task-' + task.id"
-          />
-          <label [for]="'task-' + task.id"></label>
-        </div>
-        <span class="task-priority" [class]="getPriorityClass(task.priority)">
+        <input type="checkbox"
+               [checked]="task.completed"
+               (change)="toggleComplete(task.id)"
+               [id]="'task-' + task.id">
+        <label [for]="'task-' + task.id"></label>
+        <span class="priority" [class]="getPriorityClass(task.priority)">
           {{ getPriorityLabel(task.priority) }}
         </span>
       </div>
 
-      <!-- Contenu de la tâche -->
-      <div class="task-content">
-        <h3 [class.completed-text]="task.completed">{{ task.title }}</h3>
-        <p class="task-description">{{ task.description }}</p>
+      <h3 [class.line-through]="task.completed">{{ task.title }}</h3>
+      <p>{{ task.description }}</p>
 
-        <div class="task-meta">
-          <span class="task-date">
-            📅 {{ task.dueDate | date: 'dd/MM/yyyy' }}
-          </span>
-          <span class="task-created">
-            Créée le {{ task.createdAt | date: 'dd/MM/yyyy' }}
-          </span>
-        </div>
+      <div class="task-meta">
+        <span>📅 {{ task.dueDate }}</span>
       </div>
 
-      <!-- Actions -->
       <div class="task-actions">
-        <button
-          class="btn-edit"
-          (click)="editTask(task)"
-          [disabled]="task.completed"
-        >
+        <button class="btn-edit" (click)="editTask(task)" [disabled]="task.completed">
           ✏️ Modifier
         </button>
         <button class="btn-delete" (click)="deleteTask(task.id)">
           🗑️ Supprimer
         </button>
       </div>
-
-      <!-- Badge en retard -->
-      <div class="overdue-badge" *ngIf="isOverdue(task)">
-        ⚠️ En retard
-      </div>
     </div>
   </div>
 
-  <!-- Message si aucune tâche -->
-  <div class="empty-state" *ngIf="(getFilteredTasks() | async)?.length === 0">
-    <div class="empty-icon">📋</div>
-    <h3>Aucune tâche</h3>
-    <p *ngIf="filterType === 'all'">Commencez par créer votre première tâche !</p>
-    <p *ngIf="filterType === 'pending'">Toutes vos tâches sont terminées ! 🎉</p>
-    <p *ngIf="filterType === 'completed'">Aucune tâche terminée pour le moment.</p>
+  <!-- Message vide -->
+  <div class="empty" *ngIf="(getFilteredTasks() | async)?.length === 0">
+    <p>📋 Aucune tâche</p>
   </div>
 </div>

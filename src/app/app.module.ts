@@ -1,37 +1,35 @@
-import { NgModule, isDevMode } from '@angular/core';
+// src/app/app.module.ts
+
+import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { ReactiveFormsModule } from '@angular/forms';
+import { StoreModule } from '@ngrx/store';
+import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { StoreModule } from '@ngrx/store';
-import { EffectsModule } from '@ngrx/effects';
-import { StoreDevtoolsModule } from '@ngrx/store-devtools';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { LoginComponent } from './components/login/login.component';
-import { NavbarComponent } from './components/navbar/navbar.component';
-import { TaskFormComponent } from './components/task-form/task-form.component';
-import { Task } from './models/task.model';
 import { TaskListComponent } from './components/task-list/task-list.component';
-import { ReactiveFormsModule } from '@angular/forms';
+import { NavbarComponent } from './components/navbar/navbar.component';
+
+import { appReducer } from './store/reducers/app.reducer';
 
 @NgModule({
   declarations: [
     AppComponent,
     LoginComponent,
-    NavbarComponent,
-    TaskFormComponent,
-    TaskListComponent
-
+    TaskListComponent,
+    NavbarComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
-    StoreModule.forRoot({}, {}),
-    EffectsModule.forRoot([]),
-    StoreDevtoolsModule.instrument({ maxAge: 25, logOnly: !isDevMode() }),
-    BrowserAnimationsModule,
     ReactiveFormsModule,
-
+    StoreModule.forRoot({ app: appReducer }),
+    StoreDevtoolsModule.instrument({
+      maxAge: 25,
+      logOnly: false
+    })
   ],
   providers: [],
   bootstrap: [AppComponent]

@@ -2,71 +2,49 @@
 
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Store } from '@ngrx/store';
 import { Router } from '@angular/router';
-import { AppState } from '../../store/app.state';
-import * as AuthActions from '../../store/actions/auth.actions';
-import * as TaskActions from '../../store/actions/tasks.actions';
-import { selectIsAuthenticated } from '../../store/selectors/app.selectors';
-import { v4 as uuidv4 } from 'uuid';
-import { take } from 'rxjs/operators';
+import { Store } from '@ngrx/store';
+import { Task } from '../../models/task.model';
+import * as AppActions from '../../store/actions/app.actions';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss'],
+  styleUrls: ['./login.component.scss']
 })
 export class LoginComponent implements OnInit {
   loginForm!: FormGroup;
 
   constructor(
     private fb: FormBuilder,
-    private store: Store<AppState>,
-    private router: Router,
+    private store: Store,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
     this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
+      email: ['', [Validators.required, Validators.email]]
     });
   }
-onSubmit(): void {
-  if (this.loginForm.valid) {
-    const email = this.loginForm.value.email;
 
-    const user = { id: uuidv4(), email };
+  onLogin(): void {
+    if (this.loginForm.valid) {
+      const email = this.loginForm.value.email;
 
-    // Dispatch login
-    this.store.dispatch(AuthActions.login({ user }));
+      // Dispatch login action
+      this.store.dispatch(AppActions.login({
+        user: { email }
+      }));
 
-    // Charger tâches mock
-    this.store.dispatch(
-      TaskActions.setTasks({
-        tasks: [
-          {
-            id: '1',
-            title: 'Tâche 1',
-            description: 'Description 1',
-            completed: false,
-            priority: 1,
-            userId: email,
-            dueDate: new Date(),
-            createdAt: new Date(),
-          },
-        ],
-      })
-    );
+      // Charger les tâches depuis localStorage
+      const savedTasks = localStorage.getItem(`tasks_${email}`);
+      if (savedTasks) {
+        const tasks: Task[] = JSON.parse(savedTasks);
+        this.store.dispatch(AppActions.loadTasks({ tasks }));
+      }
 
-    // ✅ Naviguer uniquement après que l'état a été mis à jour
-    this.store
-      .select(selectIsAuthenticated)
-      .pipe(take(1))
-      .subscribe((isAuth) => {
-        if (isAuth) {
-          console.log('User logged in:', user);
-          this.router.navigate(['/tasks']); // maintenant ça fonctionne
-        }
-      });
+      // Rediriger
+      this.router.navigate(['/tasks']);
+    }
   }
-}
 }

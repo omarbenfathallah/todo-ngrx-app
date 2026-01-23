@@ -1,52 +1,31 @@
-// src/app/store/app.selectors.ts
-import { createSelector } from '@ngrx/store';
-import { AppState } from '../app.state';
-import { AuthState } from '../reducers/auth.reducer';
-import { TaskState } from '../reducers/tasks.reducer';
+// src/app/store/selectors/app.selectors.ts
 
-// ---------------------------
-// Sélecteurs de base
-// ---------------------------
-export const selectAuthState = (state: AppState): AuthState =>
-  state.auth ?? { user: null, isAuthenticated: false };
+import { createFeatureSelector, createSelector } from '@ngrx/store';
+import { AppState } from '../../models/task.model';
 
-export const selectTaskState = (state: AppState): TaskState =>
-  state.tasks ?? { tasks: [], loading: false, error: null };
+export const selectAppState = createFeatureSelector<AppState>('app');
 
-// ---------------------------
-// Sélecteurs dérivés pour Auth
-// ---------------------------
-export const selectCurrentUser = createSelector(
-  selectAuthState,
-  (state: AuthState) => state?.user ?? null,
+export const selectUser = createSelector(
+  selectAppState,
+  (state: AppState) => state.user
 );
 
 export const selectIsAuthenticated = createSelector(
-  selectAuthState,
-  (auth: AuthState) => auth.isAuthenticated, // maintenant ça lit bien
-);
-// ---------------------------
-// Sélecteurs dérivés pour Tasks
-// ---------------------------
-export const selectAllTasks = createSelector(
-  selectTaskState,
-  (state: TaskState) => state?.tasks ?? [],
+  selectUser,
+  (user) => !!user
 );
 
-export const selectCompletedTasks = createSelector(selectAllTasks, (tasks) =>
-  tasks.filter((task) => task.completed),
+export const selectTasks = createSelector(
+  selectAppState,
+  (state: AppState) => state.tasks
 );
 
-export const selectPendingTasks = createSelector(selectAllTasks, (tasks) =>
-  tasks.filter((task) => !task.completed),
+export const selectPendingTasks = createSelector(
+  selectTasks,
+  (tasks) => tasks.filter(t => !t.completed)
 );
 
-export const selectTasksSortedByPriority = createSelector(
-  selectAllTasks,
-  (tasks) => [...tasks].sort((a, b) => b.priority - a.priority),
+export const selectCompletedTasks = createSelector(
+  selectTasks,
+  (tasks) => tasks.filter(t => t.completed)
 );
-
-export const selectTasksByUser = (userId: string) =>
-  createSelector(selectAllTasks, (tasks) =>
-    tasks.filter((task) => task.userId === userId),
-  );

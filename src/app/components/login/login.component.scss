@@ -1,4 +1,4 @@
-
+// src/app/components/login/login.component.scss
 
 .login-container {
   display: flex;
@@ -13,22 +13,20 @@
   background: white;
   padding: 40px;
   border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   width: 100%;
   max-width: 400px;
 
   h1 {
     margin: 0 0 10px 0;
-    color: #333;
-    font-size: 28px;
     text-align: center;
+    color: #333;
   }
 
   .subtitle {
-    color: #666;
     text-align: center;
+    color: #666;
     margin-bottom: 30px;
-    font-size: 14px;
   }
 }
 
@@ -38,39 +36,37 @@
   label {
     display: block;
     margin-bottom: 8px;
+    font-weight: 600;
     color: #333;
-    font-weight: 500;
   }
 
-  .form-control {
+  input {
     width: 100%;
     padding: 12px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #ddd;
     border-radius: 6px;
     font-size: 14px;
-    transition: border-color 0.3s;
     box-sizing: border-box;
 
     &:focus {
       outline: none;
       border-color: #667eea;
     }
+  }
 
-    &.ng-invalid.ng-touched {
-      border-color: #e74c3c;
+  .error {
+    margin-top: 5px;
+
+    small {
+      color: #e74c3c;
+      font-size: 12px;
     }
   }
 }
 
-.error-message {
-  color: #e74c3c;
-  font-size: 12px;
-  margin-top: 5px;
-}
-
-.btn-primary {
+button {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
@@ -78,14 +74,14 @@
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s, opacity 0.3s;
+  transition: transform 0.2s;
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
   }
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
   }
 }

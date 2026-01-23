@@ -4,7 +4,7 @@ export interface Task {
   id: string;
   title: string;
   description: string;
-  priority: number; // 1 à 5
+  priority: number;
   dueDate: Date;
   completed: boolean;
   userId: string;

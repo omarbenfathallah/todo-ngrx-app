@@ -1,9 +1,10 @@
+// src/app/app-routing.module.ts
+
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LoginComponent } from './components/login/login.component';
 import { TaskListComponent } from './components/task-list/task-list.component';
 import { AuthGuard } from './guards/auth.guard';
-
 
 const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -11,7 +12,7 @@ const routes: Routes = [
   {
     path: 'tasks',
     component: TaskListComponent,
-  //  canActivate: [AuthGuard]
+    canActivate: [AuthGuard]
   },
   { path: '**', redirectTo: '/login' }
 ];

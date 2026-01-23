@@ -2,37 +2,29 @@
 
 <div class="login-container">
   <div class="login-card">
-    <h1>Gestionnaire de Tâches</h1>
-    <p class="subtitle">Connectez-vous pour accéder à vos tâches</p>
+    <h1>📝 Gestionnaire de Tâches</h1>
+    <p class="subtitle">Entrez votre email pour commencer</p>
 
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+    <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
       <div class="form-group">
         <label for="email">Email</label>
         <input
           type="email"
           id="email"
           formControlName="email"
-          placeholder="votre.email@exemple.com"
-          class="form-control"
+          placeholder="votre@email.com"
         />
-        <div
-          class="error-message"
-          *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
-        >
-          <span *ngIf="loginForm.get('email')?.errors?.['required']">
-            L'email est requis
-          </span>
-          <span *ngIf="loginForm.get('email')?.errors?.['email']">
-            Veuillez entrer un email valide
-          </span>
+        <div class="error" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
+          <small *ngIf="loginForm.get('email')?.errors?.['required']">
+            Email requis
+          </small>
+          <small *ngIf="loginForm.get('email')?.errors?.['email']">
+            Email invalide
+          </small>
         </div>
       </div>
 
-      <button
-        type="submit"
-        class="btn-primary"
-        [disabled]="loginForm.invalid"
-      >
+      <button type="submit" [disabled]="loginForm.invalid">
         Se connecter
       </button>
     </form>

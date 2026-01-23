@@ -1,19 +1,14 @@
 // src/app/components/task-list/task-list.component.ts
 
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { Observable, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { AppState } from '../../store/app.state';
-import { Task } from '../../models/task.model';
-import * as TaskActions from '../../store/actions/tasks.actions';
-import {
-  selectAllTasks,
-  selectCurrentUser,
-  selectPendingTasks,
-  selectCompletedTasks
-} from '../../store/selectors/app.selectors';
-import { User } from 'src/app/models/user.model';
+import { Task} from '../../models/task.model';
+import { User } from '../../models/user.model';
+import { selectTasks, selectUser, selectPendingTasks, selectCompletedTasks } from '../../store/selectors/app.selectors';
+import * as AppActions from '../../store/actions/app.actions';
 
 @Component({
   selector: 'app-task-list',
@@ -21,33 +16,31 @@ import { User } from 'src/app/models/user.model';
   styleUrls: ['./task-list.component.scss']
 })
 export class TaskListComponent implements OnInit, OnDestroy {
-  allTasks$!: Observable<Task[]>;
+  tasks$!: Observable<Task[]>;
   pendingTasks$!: Observable<Task[]>;
   completedTasks$!: Observable<Task[]>;
-  currentUser$!: Observable<User | null>;
+  user$!: Observable<User | null>;
 
+  taskForm!: FormGroup;
   showForm = false;
   editingTask: Task | null = null;
-  filterType: 'all' | 'pending' | 'completed' = 'all';
+  filter: 'all' | 'pending' | 'completed' = 'all';
 
   private destroy$ = new Subject<void>();
 
-  constructor(private store: Store<AppState>) {}
+  constructor(
+    private store: Store,
+    private fb: FormBuilder
+  ) {}
 
   ngOnInit(): void {
-    this.allTasks$ = this.store.select(selectAllTasks);
+    this.tasks$ = this.store.select(selectTasks);
     this.pendingTasks$ = this.store.select(selectPendingTasks);
     this.completedTasks$ = this.store.select(selectCompletedTasks);
-    this.currentUser$ = this.store.select(selectCurrentUser);
+    this.user$ = this.store.select(selectUser);
 
-    // Sauvegarder automatiquement dans localStorage à chaque changement
-    this.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
-      if (user) {
-        this.allTasks$.pipe(takeUntil(this.destroy$)).subscribe(tasks => {
-          localStorage.setItem(`tasks_${user.email}`, JSON.stringify(tasks));
-        });
-      }
-    });
+    this.initForm();
+    this.setupAutoSave();
   }
 
   ngOnDestroy(): void {
@@ -55,83 +48,93 @@ export class TaskListComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  initForm(): void {
+    this.taskForm = this.fb.group({
+      title: ['', [Validators.required, Validators.minLength(3)]],
+      description: ['', [Validators.required, Validators.minLength(10)]],
+      priority: [3, [Validators.required, Validators.min(1), Validators.max(5)]],
+      dueDate: ['', Validators.required]
+    });
+  }
+
+  setupAutoSave(): void {
+    this.user$.pipe(takeUntil(this.destroy$)).subscribe(user => {
+      if (user) {
+        this.tasks$.pipe(takeUntil(this.destroy$)).subscribe(tasks => {
+          localStorage.setItem(`tasks_${user.email}`, JSON.stringify(tasks));
+        });
+      }
+    });
+  }
+
   getFilteredTasks(): Observable<Task[]> {
-    switch (this.filterType) {
-      case 'pending':
-        return this.pendingTasks$;
-      case 'completed':
-        return this.completedTasks$;
-      default:
-        return this.allTasks$;
-    }
+    if (this.filter === 'pending') return this.pendingTasks$;
+    if (this.filter === 'completed') return this.completedTasks$;
+    return this.tasks$;
   }
 
   toggleForm(): void {
     this.showForm = !this.showForm;
     if (!this.showForm) {
       this.editingTask = null;
+      this.taskForm.reset({ priority: 3 });
     }
-  }
-
-  onSubmitTask(taskData: Partial<Task>): void {
-    this.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
-      if (user) {
-        if (this.editingTask) {
-          // Mise à jour
-          const updatedTask: Task = {
-            ...this.editingTask,
-            ...taskData
-          } as Task;
-          this.store.dispatch(TaskActions.updateTask({ task: updatedTask }));
-        } else {
-          // Création
-          const newTask: Task = {
-            id: this.generateId(),
-            title: taskData.title!,
-            description: taskData.description!,
-            priority: taskData.priority!,
-            dueDate: taskData.dueDate!,
-            completed: false,
-            userId: user.email,
-            createdAt: new Date()
-          };
-          this.store.dispatch(TaskActions.addTask({ task: newTask }));
-        }
-
-        this.showForm = false;
-        this.editingTask = null;
-      }
-    }).unsubscribe();
   }
 
   editTask(task: Task): void {
     this.editingTask = task;
     this.showForm = true;
+    this.taskForm.patchValue({
+      title: task.title,
+      description: task.description,
+      priority: task.priority,
+      dueDate: task.dueDate
+    });
   }
 
-  deleteTask(id: string): void {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
-      this.store.dispatch(TaskActions.deleteTask({ id }));
-    }
+  onSubmit(): void {
+    if (this.taskForm.invalid) return;
+
+    this.user$.pipe(takeUntil(this.destroy$)).subscribe(user => {
+      if (!user) return;
+
+      const formValue = this.taskForm.value;
+
+      if (this.editingTask) {
+        // Update
+        const updatedTask: Task = {
+          ...this.editingTask,
+          ...formValue
+        };
+        this.store.dispatch(AppActions.updateTask({ task: updatedTask }));
+      } else {
+        // Create
+        const newTask: Task = {
+          id: Date.now().toString(),
+          ...formValue,
+          completed: false,
+          userId: user.email,
+          createdAt: new Date().toISOString()
+        };
+        this.store.dispatch(AppActions.addTask({ task: newTask }));
+      }
+
+      this.toggleForm();
+    }).unsubscribe();
   }
 
   toggleComplete(id: string): void {
-    this.store.dispatch(TaskActions.toggleTaskComplete({ id }));
+    this.store.dispatch(AppActions.toggleTask({ id }));
   }
 
-  cancelForm(): void {
-    this.showForm = false;
-    this.editingTask = null;
-  }
-
-  getPriorityClass(priority: number): string {
-    if (priority >= 4) return 'priority-high';
-    if (priority === 3) return 'priority-medium';
-    return 'priority-low';
+  deleteTask(id: string): void {
+    if (confirm('Supprimer cette tâche ?')) {
+      this.store.dispatch(AppActions.deleteTask({ id }));
+    }
   }
 
   getPriorityLabel(priority: number): string {
-    const labels: { [key: number]: string } = {
+    const labels: any = {
       1: 'Très basse',
       2: 'Basse',
       3: 'Moyenne',
@@ -141,11 +144,9 @@ export class TaskListComponent implements OnInit, OnDestroy {
     return labels[priority];
   }
 
-  isOverdue(task: Task): boolean {
-    return !task.completed && new Date(task.dueDate) < new Date();
-  }
-
-  private generateId(): string {
-    return `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  getPriorityClass(priority: number): string {
+    if (priority >= 4) return 'high';
+    if (priority === 3) return 'medium';
+    return 'low';
   }
 }

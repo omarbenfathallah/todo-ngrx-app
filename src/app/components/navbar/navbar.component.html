@@ -1,14 +1,11 @@
-<nav class="navbar" *ngIf="user$ | async as user">
-  <div class="navbar-container">
-    <div class="navbar-brand">
-      <h2>📝 Mes Tâches</h2>
-    </div>
+<!-- src/app/components/navbar/navbar.component.html -->
 
-    <div class="navbar-user">
-      <span class="user-email">{{ user.email }}</span>
-      <button class="btn-logout" (click)="logout()">
-        Déconnexion
-      </button>
+<nav class="navbar">
+  <div class="container">
+    <h2>📝 Mes Tâches</h2>
+    <div class="user-info" *ngIf="user$ | async as user">
+      <span>{{ user.email }}</span>
+      <button (click)="logout()">Déconnexion</button>
     </div>
   </div>
 </nav>
